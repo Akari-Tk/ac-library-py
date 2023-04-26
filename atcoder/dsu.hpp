@@ -116,12 +116,10 @@ _dsu_leader(DsuObject *self, int a) {
 }
 
 static PyObject *
-dsu_leader(DsuObject *self, PyObject *const *args, Py_ssize_t nargs) {
+dsu_leader(DsuObject *self, PyObject *arg) {
     int a;
-    if (nargs != 1) NARGS_VIOLATION("DSU.leader", 1);
-    a = _PyObject_AsPositiveInt(args[0]);
+    a = _PyObject_AsPositiveInt(arg);
     if (a == -1) CANNOT_CONVERT("DSU.leader", 0, "non-negative int");
-    if (a == -1) 
     // assert(0 <= a && a < self->_n);
     if (0 > a || a >= self->_n){
         PyErr_Format(PyExc_IndexError, "index %d is out of range", a);
@@ -157,7 +155,7 @@ u8"leader(a)\n"
 );
 
 #define ACL_PYTHON_DSU_LEADER_METHODDEF \
-    {"leader", (PyCFunction)(void(*)(void))dsu_leader, METH_FASTCALL, dsu_leader_doc},
+    {"leader", (PyCFunction)(void(*)(void))dsu_leader, METH_O, dsu_leader_doc},
 
 
 
@@ -284,10 +282,9 @@ PyDoc_STRVAR(dsu_same_doc,
 
 
 static PyObject *
-dsu_size(DsuObject *self, PyObject *const *args, Py_ssize_t nargs) {
+dsu_size(DsuObject *self, PyObject *arg) {
     int a;
-    if (nargs != 1) NARGS_VIOLATION("DSU.size", 1);
-    a = _PyObject_AsPositiveInt(args[0]);
+    a = _PyObject_AsPositiveInt(arg);
     if (a == -1) CANNOT_CONVERT("DSU.size", 0, "non-negative int");
     // assert(0 <= a && a < self->_n);
     if (0 > a || a >= self->_n){
@@ -323,7 +320,7 @@ PyDoc_STRVAR(dsu_size_doc,
 );
 
 #define ACL_PYTHON_DSU_SIZE_METHODDEF \
-    {"size", (PyCFunction)(void(*)(void))dsu_size, METH_FASTCALL, dsu_size_doc},
+    {"size", (PyCFunction)(void(*)(void))dsu_size, METH_O, dsu_size_doc},
 
 
 static std::vector<std::vector<int>>
