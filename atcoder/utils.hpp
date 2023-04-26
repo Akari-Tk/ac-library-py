@@ -8,8 +8,8 @@
 namespace atcoder_python {
 
 
-#define ERROR(x) fprintf(stderr, x);
-#define ERRORF(x, y) fprintf(stderr, x, y);
+#define EOUT(x) fprintf(stderr, x);
+#define EOUT2(x, y) fprintf(stderr, x, y);
 
 #define NOT_INT_ERROR                                   \
     do {                                               \
