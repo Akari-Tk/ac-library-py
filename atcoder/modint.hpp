@@ -71,7 +71,7 @@ ModInt_FromUnsignedInt(unsigned int v)
 {
     PyTypeObject* type = &ModIntType;
     ModIntObject* z = (ModIntObject*)type->tp_alloc(type, 0);
-    if (v > ModIntObject::mod) v %= ModIntObject::mod;
+    if (v >= ModIntObject::mod) v %= ModIntObject::mod;
     z->v = v;
     return z;
 }
@@ -93,11 +93,7 @@ UnsignedInt_FromPyObject(PyObject *o)
 {
     long v;
     if (PyLong_Check(o)){
-        Py_ssize_t size_o = Py_SIZE(o);
-        if (size_o < 0 || size_o > 1) {
-            o = PyNumber_Remainder(o, PyLong_FromUnsignedLong((unsigned long)ModIntObject::mod));
-        }
-        v = PyLong_AsLong(o);
+        v = PyLong_AsLong(PyNumber_Remainder(o, PyLong_FromUnsignedLong((unsigned long)ModIntObject::mod)));
     } else {
         v = (long)ModInt_AsUnsignedInt(o);
     }
@@ -177,7 +173,7 @@ ModInt_mul(PyObject *a, PyObject *b)
 }
 
 static unsigned int
-ModInt_pow_fast(unsigned int a, unsigned long long n)
+_ModInt_pow(unsigned int a, unsigned long long n)
 {
     unsigned int result = 1;
     while (n) {
@@ -202,17 +198,18 @@ ModInt_pow(PyObject *v, PyObject *w, PyObject *x)
     long long n = PyLong_AsLongLongAndOverflow(w, &overflow);
     if (overflow) {
         PyErr_SetString(PyExc_OverflowError, "exponent -> long long");
+        return NULL;
     }
     if (n < 0) {
         auto eg = inv_gcd(a, ModIntObject::mod);
         if (eg.first != 1){
-            PyErr_Format(PyExc_ValueError, "There is no inverse element of %u in mod %u",
-                        a, ModIntObject::mod);
+            const char* msg = "There is no inverse element of %u in mod %u";
+            return PyErr_Format(PyExc_ValueError, msg, a, ModIntObject::mod);
         }
         a = (unsigned int)eg.second;
         n = -n;
     }
-    result = ModInt_pow_fast(a, (unsigned long long)n);
+    result = _ModInt_pow(a, (unsigned long long)n);
     z = ModInt_FromUnsignedInt(result);
     return (PyObject *)z;
 }
@@ -260,8 +257,8 @@ ModInt_floor_div(PyObject *a, PyObject *b)
     _b = UnsignedInt_FromPyObject(b);
     auto eg = inv_gcd(_b, ModIntObject::mod);
     if (eg.first != 1){
-        PyErr_Format(PyExc_ValueError, "There is no inverse element of %u in mod %u",
-                     _b, ModIntObject::mod);
+        const char* msg = "There is no inverse element of %u in mod %u";
+        return PyErr_Format(PyExc_ValueError, msg, _b, ModIntObject::mod);
     }
     z = ModInt_FromUnsignedInt(_ModInt_mul(_a, (unsigned int)eg.second));
     return (PyObject *)z;
