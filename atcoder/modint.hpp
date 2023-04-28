@@ -93,7 +93,14 @@ UnsignedInt_FromPyObject(PyObject *o)
 {
     long v;
     if (PyLong_Check(o)){
-        v = PyLong_AsLong(PyNumber_Remainder(o, PyLong_FromUnsignedLong((unsigned long)ModIntObject::mod)));
+        PyObject *py_mod;
+        py_mod = PyLong_FromUnsignedLong((unsigned long)ModIntObject::mod);
+        if (!py_mod) return (unsigned int)-1;
+        o = PyNumber_Remainder(o, py_mod);
+        Py_DECREF(py_mod);
+        if (!o) return (unsigned int)-1;
+        v = PyLong_AsLong(o);
+        Py_DECREF(o);
     } else {
         v = (long)ModInt_AsUnsignedInt(o);
     }
