@@ -91,14 +91,31 @@ ModInt_AsUnsignedInt(PyObject *vv)
 static unsigned int
 UnsignedInt_FromPyObject(PyObject *o)
 {
-    long v;
+    unsigned int v;
     if (PyLong_Check(o)){
-        v = PyLong_AsLong(PyNumber_Remainder(o, PyLong_FromUnsignedLong((unsigned long)ModIntObject::mod)));
+        long long x;
+        int overflow = 0;
+        x = PyLong_AsLongLongAndOverflow(o, &overflow);
+        if (overflow) {
+            PyObject *py_mod;
+            py_mod = PyLong_FromUnsignedLong((unsigned long)ModIntObject::mod);
+            if (!py_mod) return (unsigned int)-1;
+            o = PyNumber_Remainder(o, py_mod);
+            Py_DECREF(py_mod);
+            if (!o) return (unsigned int)-1;
+            v = (unsigned int)PyLong_AsUnsignedLong(o);
+            Py_DECREF(o);
+        } else {
+            if (x < 0 || x >= ModIntObject::mod) {
+                x %= ModIntObject::mod;
+                if (x < 0) x += ModIntObject::mod;
+            }
+            v = (unsigned int)x;
+        }
     } else {
-        v = (long)ModInt_AsUnsignedInt(o);
+        v = ModInt_AsUnsignedInt(o);
     }
-    if (v >= ModIntObject::mod) v %= ModIntObject::mod;
-    return (unsigned int)v;
+    return v;
 }
 
 static PyObject *
@@ -524,9 +541,21 @@ ModInt_init(ModIntObject *self, PyObject *args, PyObject *kwargs)
         v = 0;
     } else if (PyLong_Check(o)){
         if (Py_ABS(Py_SIZE(o)) > 1 || Py_SIZE(o) < 0) {
-            o = PyNumber_Remainder(o, PyLong_FromUnsignedLong((unsigned long)self->mod));
+            // o = PyNumber_Remainder(o, PyLong_FromUnsignedLong((unsigned long)self->mod));
+            PyObject *py_mod = PyLong_FromUnsignedLong((unsigned long)self->mod);
+            if (!py_mod) return -1;
+            o = PyNumber_Remainder(o, py_mod);
+            Py_DECREF(py_mod);
+            if (!o) return -1;
+        } else {
+            Py_INCREF(o);
         }
         v = PyLong_AsLong(o);
+        Py_DECREF(o);
+        if (v < 0) {
+            if (PyErr_Occurred()) return -1;
+            v += self->mod;
+        }
     } else if (ModInt_Check(o)) {
         v = (long)ModInt_AsUnsignedInt(o);
     } else {
@@ -535,7 +564,7 @@ ModInt_init(ModIntObject *self, PyObject *args, PyObject *kwargs)
     }
 
     if (v >= self->mod) v %= (long)self->mod;
-    if (v < 0) v += self->mod;
+    // if (v < 0) v += self->mod;
 
     self->v = v;
     return 0;
