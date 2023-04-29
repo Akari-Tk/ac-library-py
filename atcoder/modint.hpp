@@ -541,7 +541,6 @@ ModInt_init(ModIntObject *self, PyObject *args, PyObject *kwargs)
         v = 0;
     } else if (PyLong_Check(o)){
         if (Py_ABS(Py_SIZE(o)) > 1 || Py_SIZE(o) < 0) {
-            // o = PyNumber_Remainder(o, PyLong_FromUnsignedLong((unsigned long)self->mod));
             PyObject *py_mod = PyLong_FromUnsignedLong((unsigned long)self->mod);
             if (!py_mod) return -1;
             o = PyNumber_Remainder(o, py_mod);
@@ -562,9 +561,7 @@ ModInt_init(ModIntObject *self, PyObject *args, PyObject *kwargs)
         PyErr_SetString(PyExc_TypeError, "required: 'int' or 'ModInt'");
         return -1;
     }
-
     if (v >= self->mod) v %= (long)self->mod;
-    // if (v < 0) v += self->mod;
 
     self->v = v;
     return 0;
