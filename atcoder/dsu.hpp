@@ -110,27 +110,23 @@ static PySequenceMethods dsu_as_sequence = {
 
 
 static int
-_dsu_leader(DsuObject *self, int a) {
+dsu_leader_impl(DsuObject *self, int a) {
     if (self->parent_or_size[a] < 0) return a;
-    return self->parent_or_size[a] = _dsu_leader(self, self->parent_or_size[a]);
+    return self->parent_or_size[a] = dsu_leader_impl(self, self->parent_or_size[a]);
 }
 
 static PyObject *
 dsu_leader(DsuObject *self, PyObject *arg) {
-    int a;
-    a = _PyObject_AsPositiveInt(arg);
-    if (a == -1) CANNOT_CONVERT("DSU.leader", 0, "non-negative int");
-    // assert(0 <= a && a < self->_n);
-    if (0 > a || a >= self->_n){
-        PyErr_Format(PyExc_IndexError, "index %d is out of range", a);
-        return NULL;
-    }
-    return PyLong_FromLong((long)_dsu_leader(self, a));
+    long a;
+    a = PyLong_AsLong(arg);
+    CHECK_CONVERT(a);
+    CHECK_INDEX_RANGE(a, self->_n);
+    return PyLong_FromLong((long)dsu_leader_impl(self, a));
 }
 
 
 PyDoc_STRVAR(dsu_leader_doc,
-u8"leader(a)\n"
+"leader(a)\n"
 "--\n\n"
 "Get the representative of the connected component\n"
 "that contains the vertex a.\n\n"
@@ -160,9 +156,9 @@ u8"leader(a)\n"
 
 
 static bool
-_dsu_merge(DsuObject *self, int a, int b) {
-    a = _dsu_leader(self, a);
-    b = _dsu_leader(self, b);
+dsu_merge_impl(DsuObject *self, int a, int b) {
+    a = dsu_leader_impl(self, a);
+    b = dsu_leader_impl(self, b);
     if (a == b) return false;
     if (-self->parent_or_size[a] < -self->parent_or_size[b]) std::swap(a, b);
     self->parent_or_size[a] += self->parent_or_size[b];
@@ -172,23 +168,18 @@ _dsu_merge(DsuObject *self, int a, int b) {
 
 static PyObject *
 dsu_merge(DsuObject *self, PyObject *const *args, Py_ssize_t nargs) {
-    int a, b;
     if (nargs != 2) NARGS_VIOLATION("DSU.merge", 2);
-    a = _PyObject_AsPositiveInt(args[0]);
-    b = _PyObject_AsPositiveInt(args[1]);
-    if (a == -1) CANNOT_CONVERT("DSU.merge", 0, "non-negative int");
-    if (b == -1) CANNOT_CONVERT("DSU.merge", 1, "non-negative int");
-    // assert(0 <= a && a < self->_n);
-    if (0 > a || a >= self->_n){
-        PyErr_Format(PyExc_IndexError, "index %d is out of range", a);
-        return NULL;
-    }
-    // assert(0 <= b && b < self->_n);
-    if (0 > b || b >= self->_n){
-        PyErr_Format(PyExc_IndexError, "index %d is out of range", b);
-        return NULL;
-    }
-    if (_dsu_merge(self, a, b)) Py_RETURN_TRUE;
+    long a, b;
+
+    a = PyLong_AsLong(args[0]);
+    CHECK_CONVERT(a);
+    CHECK_INDEX_RANGE(a, self->_n);
+
+    b = PyLong_AsLong(args[1]);
+    CHECK_CONVERT(b);
+    CHECK_INDEX_RANGE(b, self->_n);
+
+    if (dsu_merge_impl(self, a, b)) Py_RETURN_TRUE;
     Py_RETURN_FALSE;
 }
 
@@ -225,27 +216,28 @@ PyDoc_STRVAR(dsu_merge_doc,
     {"merge", (PyCFunction)(void(*)(void))dsu_merge, METH_FASTCALL, dsu_merge_doc},
 
 
+static bool
+dsu_same_impl(DsuObject *self, int a, int b) {
+    a = dsu_leader_impl(self, a);
+    b = dsu_leader_impl(self, b);
+    return a == b;
+}
+
+
 static PyObject *
 dsu_same(DsuObject *self, PyObject *const *args, Py_ssize_t nargs) {
-    int a, b;
     if (nargs != 2) NARGS_VIOLATION("DSU.same", 2);
-    a = _PyObject_AsPositiveInt(args[0]);
-    b = _PyObject_AsPositiveInt(args[1]);
-    if (a == -1) CANNOT_CONVERT("DSU.same", 0, "non-negative int");
-    if (b == -1) CANNOT_CONVERT("DSU.same", 1, "non-negative int");
-    // assert(0 <= a && a < self->_n);
-    if (0 > a || a >= self->_n){
-        PyErr_Format(PyExc_IndexError, "index %d is out of range", a);
-        return NULL;
-    }
-    // assert(0 <= b && b < self->_n);
-    if (0 > b || b >= self->_n){
-        PyErr_Format(PyExc_IndexError, "index %d is out of range", b);
-        return NULL;
-    }
-    a = _dsu_leader(self, a);
-    b = _dsu_leader(self, b);
-    if (a == b) Py_RETURN_TRUE;
+    long a, b;
+
+    a = PyLong_AsLong(args[0]);
+    CHECK_CONVERT(a);
+    CHECK_INDEX_RANGE(a, self->_n);
+
+    b = PyLong_AsLong(args[1]);
+    CHECK_CONVERT(b);
+    CHECK_INDEX_RANGE(b, self->_n);
+
+    if (dsu_same_impl(self, (int)a, (int)b)) Py_RETURN_TRUE;
     Py_RETURN_FALSE;
 }
 
@@ -281,18 +273,20 @@ PyDoc_STRVAR(dsu_same_doc,
     {"same", (PyCFunction)(void(*)(void))dsu_same, METH_FASTCALL, dsu_same_doc},
 
 
+static int
+dsu_size_impl(DsuObject *self, int a) {
+    a = dsu_leader_impl(self, a);
+    return -self->parent_or_size[a];
+}
+
+
 static PyObject *
 dsu_size(DsuObject *self, PyObject *arg) {
-    int a;
-    a = _PyObject_AsPositiveInt(arg);
-    if (a == -1) CANNOT_CONVERT("DSU.size", 0, "non-negative int");
-    // assert(0 <= a && a < self->_n);
-    if (0 > a || a >= self->_n){
-        PyErr_Format(PyExc_IndexError, "index %d is out of range", a);
-        return NULL;
-    }
-    a = _dsu_leader(self, a);
-    return PyLong_FromLong((long)(-self->parent_or_size[a]));
+    long a;
+    a = PyLong_AsLong(arg);
+    CHECK_CONVERT(a);
+    CHECK_INDEX_RANGE(a, self->_n);
+    return PyLong_FromLong((long)dsu_size_impl(self, (int)a));
 }
 
 PyDoc_STRVAR(dsu_size_doc,
@@ -324,11 +318,11 @@ PyDoc_STRVAR(dsu_size_doc,
 
 
 static std::vector<std::vector<int>>
-_dsu_groups(DsuObject *self) {
+dsu_groups_impl(DsuObject *self) {
     int n = self->_n;
     std::vector<int> leader_buf(n), group_size(n);
     for (int i = 0; i < n; i++) {
-        leader_buf[i] = _dsu_leader(self, i);
+        leader_buf[i] = dsu_leader_impl(self, i);
         group_size[leader_buf[i]]++;
     }
     std::vector<std::vector<int>> result(n);
@@ -347,7 +341,7 @@ _dsu_groups(DsuObject *self) {
 
 static PyObject *
 dsu_groups(DsuObject *self, PyObject *args) {
-    std::vector<std::vector<int>> res = _dsu_groups(self);
+    std::vector<std::vector<int>> res = dsu_groups_impl(self);
     return _PyList_FromVectorVectorInt(res);
 }
 
@@ -399,28 +393,21 @@ static PyMethodDef dsu_methods[] = {
 //     {NULL} /* Sentinel */
 // };
 
-// static int
-// dsu_init(DsuObject *self, PyObject *args, PyObject *kwargs)
-// {
-//     int n;
-//     if (!PyArg_ParseTuple(args, "i", &n)) return -1;
-//     self->_n = n;
-//     self->parent_or_size.assign(n, -1);
-//     return 0;
-// }
+static int
+dsu_init(DsuObject *self, PyObject *args, PyObject *kwargs) {
+    int n;
+    if (!PyArg_ParseTuple(args, "i", &n)) return -1;
+    self->_n = n;
+    self->parent_or_size =  std::vector<int>(n, -1);
+    return 0;
+}
 
 
 static PyObject *
-dsu_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
-{
+dsu_new(PyTypeObject *type, PyObject *args, PyObject *kwargs) {
     DsuObject *self;
     self = (DsuObject *)type->tp_alloc(type, 0);
-    if (self != NULL) {
-        int n;
-        if (!PyArg_ParseTuple(args, "i", &n)) return NULL;
-        self->_n = n;
-        self->parent_or_size = std::vector<int>(n, -1);
-    }
+    if (self == NULL) return NULL;
     return (PyObject *)self;
 }
 
@@ -429,7 +416,8 @@ PyTypeObject DsuType = {
     .ob_base = {PyObject_HEAD_INIT(NULL) 0},
     .tp_name = "atcoder.DSU",
     .tp_basicsize = sizeof(DsuObject),
-    .tp_itemsize = sizeof(int),
+    .tp_itemsize = 0,
+    // .tp_itemsize = sizeof(int),
     .tp_repr = (reprfunc)dsu_repr,
     .tp_as_sequence = &dsu_as_sequence,
     // .tp_getattro = PyObject_GenericGetAttr,
@@ -438,7 +426,7 @@ PyTypeObject DsuType = {
     .tp_doc = dsu_doc,
     .tp_methods = dsu_methods,
     // .tp_members = dsu_members,
-    // .tp_init = (initproc)dsu_init,
+    .tp_init = (initproc)dsu_init,
     .tp_new = dsu_new,
     .tp_free = PyObject_Del,
 };

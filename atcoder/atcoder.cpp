@@ -7,12 +7,10 @@
 #include "atcoder/fenwicktree"
 #include "atcoder/modint"
 #include "atcoder/math"
-
-
-
-
-
-
+#include "atcoder/bitset"
+#include "atcoder/segtree"
+#include "atcoder/lazysegtree"
+#include "atcoder/scc"
 
 
 
@@ -22,8 +20,6 @@ namespace atcoder_python {
 PyDoc_STRVAR(atcoder_doc,
 "AtCoder Library for Python\n\
 ");
-
-
 
 
 
@@ -41,9 +37,6 @@ static struct PyModuleDef atcodermodule = {
 };
 
 
-
-
-
 PyMODINIT_FUNC
 PyInit_atcoder(void)
 {
@@ -54,6 +47,10 @@ PyInit_atcoder(void)
         &DsuType,
         &FenwickTreeType,
         &ModIntType,
+        &BitSetType,
+        &SegTreeType,
+        &LazySegTreeType,
+        &SCCGraphType,
         NULL
     };
 

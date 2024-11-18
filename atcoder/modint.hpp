@@ -67,8 +67,7 @@ struct ModIntObject
 
 
 static ModIntObject *
-ModInt_FromUnsignedInt(unsigned int v)
-{
+ModInt_FromUnsignedInt(unsigned int v) {
     PyTypeObject* type = &ModIntType;
     ModIntObject* z = (ModIntObject*)type->tp_alloc(type, 0);
     if (v >= ModIntObject::mod) v %= ModIntObject::mod;
@@ -78,8 +77,7 @@ ModInt_FromUnsignedInt(unsigned int v)
 
 
 static unsigned int
-ModInt_AsUnsignedInt(PyObject *vv)
-{
+ModInt_AsUnsignedInt(PyObject *vv) {
     ModIntObject *v;
 
     if (!ModInt_Check(vv)) return -1;
@@ -89,8 +87,7 @@ ModInt_AsUnsignedInt(PyObject *vv)
 
 
 static unsigned int
-UnsignedInt_FromPyObject(PyObject *o)
-{
+UnsignedInt_FromPyObject(PyObject *o) {
     unsigned int v;
     if (PyLong_Check(o)){
         long long x;
@@ -119,8 +116,7 @@ UnsignedInt_FromPyObject(PyObject *o)
 }
 
 static PyObject *
-ModInt_to_decimal_string(PyObject *vv)
-{
+ModInt_to_decimal_string(PyObject *vv) {
     ModIntObject *v;
 
     if (!ModInt_Check(vv)) return NULL;
@@ -129,26 +125,18 @@ ModInt_to_decimal_string(PyObject *vv)
 
 }
 
+static unsigned int
+ModInt_add_impl(unsigned int a, unsigned int b) {
+    unsigned int result;
 
-static PyObject *
-ModInt_add(PyObject *a, PyObject *b)
-{
-    ModIntObject *z;
-
-    CHECK_BINOP_MODINT(a, b);
-
-    unsigned int _a, _b, result;
-    _a = UnsignedInt_FromPyObject(a);
-    _b = UnsignedInt_FromPyObject(b);
-    result = _a + _b;
+    result = a + b;
     if (result >= ModIntObject::mod) result -= ModIntObject::mod;
-    z = ModInt_FromUnsignedInt(result);
-    return (PyObject *)z;
+    return result;
 }
 
+
 static PyObject *
-ModInt_sub(PyObject *a, PyObject *b)
-{
+ModInt_add(PyObject *a, PyObject *b) {
     ModIntObject *z;
 
     CHECK_BINOP_MODINT(a, b);
@@ -156,15 +144,38 @@ ModInt_sub(PyObject *a, PyObject *b)
     unsigned int _a, _b, result;
     _a = UnsignedInt_FromPyObject(a);
     _b = UnsignedInt_FromPyObject(b);
-    result = _a - _b;
-    if (result >= ModIntObject::mod) result += ModIntObject::mod;
+    result = ModInt_add_impl(_a, _b);
+    
     z = ModInt_FromUnsignedInt(result);
     return (PyObject *)z;
 }
 
 static unsigned int
-_ModInt_mul(unsigned int a, unsigned int b)
-{
+ModInt_sub_impl(unsigned int a, unsigned int b) {
+    unsigned int result;
+
+    result = a - b;
+    if (result >= ModIntObject::mod) result += ModIntObject::mod;
+    return result;
+}
+
+static PyObject *
+ModInt_sub(PyObject *a, PyObject *b) {
+    ModIntObject *z;
+
+    CHECK_BINOP_MODINT(a, b);
+
+    unsigned int _a, _b, result;
+    _a = UnsignedInt_FromPyObject(a);
+    _b = UnsignedInt_FromPyObject(b);
+    result = ModInt_sub_impl(_a, _b);
+
+    z = ModInt_FromUnsignedInt(result);
+    return (PyObject *)z;
+}
+
+static unsigned int
+ModInt_mul_impl(unsigned int a, unsigned int b) {
     unsigned long long z = a;
     z *= b;
     unsigned long long x = (unsigned long long)(((unsigned __int128)(z)*ModIntObject::im) >> 64);
@@ -175,8 +186,7 @@ _ModInt_mul(unsigned int a, unsigned int b)
 }
 
 static PyObject *
-ModInt_mul(PyObject *a, PyObject *b)
-{
+ModInt_mul(PyObject *a, PyObject *b) {
     ModIntObject *z;
 
     CHECK_BINOP_MODINT(a, b);
@@ -184,18 +194,17 @@ ModInt_mul(PyObject *a, PyObject *b)
     unsigned int _a, _b;
     _a = UnsignedInt_FromPyObject(a);
     _b = UnsignedInt_FromPyObject(b);
-    unsigned int result = _ModInt_mul(_a, _b);
+    unsigned int result = ModInt_mul_impl(_a, _b);
     z = ModInt_FromUnsignedInt(result);
     return (PyObject *)z;
 }
 
 static unsigned int
-_ModInt_pow(unsigned int a, unsigned long long n)
-{
+ModInt_pow_impl(unsigned int a, unsigned long long n) {
     unsigned int result = 1;
     while (n) {
-        if (n & 1) result = _ModInt_mul(result, a);
-        a = _ModInt_mul(a, a);
+        if (n & 1) result = ModInt_mul_impl(result, a);
+        a = ModInt_mul_impl(a, a);
         n >>= 1;
     }
     return result;
@@ -203,8 +212,7 @@ _ModInt_pow(unsigned int a, unsigned long long n)
 
 
 static PyObject *
-ModInt_pow(PyObject *v, PyObject *w, PyObject *x)
-{
+ModInt_pow(PyObject *v, PyObject *w, PyObject *x) {
     ModIntObject *z;
 
     if (!ModInt_Check(v) || !PyLong_Check(w)) Py_RETURN_NOTIMPLEMENTED;
@@ -226,14 +234,13 @@ ModInt_pow(PyObject *v, PyObject *w, PyObject *x)
         a = (unsigned int)eg.second;
         n = -n;
     }
-    result = _ModInt_pow(a, (unsigned long long)n);
+    result = ModInt_pow_impl(a, (unsigned long long)n);
     z = ModInt_FromUnsignedInt(result);
     return (PyObject *)z;
 }
 
 static PyObject *
-ModInt_neg(PyObject *v)
-{
+ModInt_neg(PyObject *v) {
     ModIntObject *z;
     int a = (int)ModInt_AsUnsignedInt(v);
     a = -a + ModIntObject::mod;
@@ -242,29 +249,25 @@ ModInt_neg(PyObject *v)
 }
 
 static PyObject *
-ModInt_pos(PyObject *v)
-{
+ModInt_pos(PyObject *v) {
     Py_INCREF(v);
     return v;
 }
 
 static int
-ModInt_bool(PyObject *v)
-{
+ModInt_bool(PyObject *v) {
     return ModInt_AsUnsignedInt(v) != 0;
 }
 
 static PyObject *
-ModInt_AsPyLong(PyObject *v)
-{
+ModInt_AsPyLong(PyObject *v) {
     return (PyObject *)PyLong_FromUnsignedLong((unsigned long)ModInt_AsUnsignedInt(v));
 }
 
 
 
 static PyObject *
-ModInt_floor_div(PyObject *a, PyObject *b)
-{
+ModInt_floor_div(PyObject *a, PyObject *b) {
     ModIntObject *z;
 
     CHECK_BINOP_MODINT(a, b);
@@ -277,7 +280,7 @@ ModInt_floor_div(PyObject *a, PyObject *b)
         const char* msg = "There is no inverse element of %u in mod %u";
         return PyErr_Format(PyExc_ValueError, msg, _b, ModIntObject::mod);
     }
-    z = ModInt_FromUnsignedInt(_ModInt_mul(_a, (unsigned int)eg.second));
+    z = ModInt_FromUnsignedInt(ModInt_mul_impl(_a, (unsigned int)eg.second));
     return (PyObject *)z;
 }
 
@@ -323,7 +326,7 @@ static PyNumberMethods ModInt_as_number = {
 
 
 PyDoc_STRVAR(ModInt_doc,
-u8"It is the struct that treats the modular arithmetic\n"
+"It is the struct that treats the modular arithmetic\n"
 "implemented based on AtCoder Library.\n\n"
 "The following operations between (ModInt/int) and (ModInt/int)\n"
 "are supported:\n"
@@ -391,14 +394,12 @@ u8"It is the struct that treats the modular arithmetic\n"
 
 
 static int
-ModInt_compare(unsigned int self, unsigned int other)
-{
+ModInt_compare(unsigned int self, unsigned int other) {
     return self == other ? 0 : 1;
 }
 
 static PyObject *
-ModInt_richcompare(PyObject *self, PyObject *other, int op)
-{
+ModInt_richcompare(PyObject *self, PyObject *other, int op) {
     int result;
 
     CHECK_BINOP_MODINT(self, other);
@@ -417,7 +418,7 @@ ModInt_get_mod(ModIntObject *self, PyObject *args) {
 }
 
 PyDoc_STRVAR(modint_get_mod_doc,
-u8"get_mod()\n"
+"get_mod()\n"
 "--\n\n"
 "Get the mod\n\n"
 "Parameters\n"
@@ -457,7 +458,7 @@ ModInt_set_mod(ModIntObject *self, PyObject *args) {
 }
 
 PyDoc_STRVAR(modint_set_mod_doc,
-u8"set_mod(mod)\n"
+"set_mod(mod)\n"
 "--\n\n"
 "Set the mod\n\n"
 "Parameters\n"
@@ -506,7 +507,7 @@ ModInt_get_inv(PyObject *self, void *closure)
 }
 
 PyDoc_STRVAR(modint_inv_doc,
-u8"Get the inverse element\n\n"
+"Get the inverse element\n\n"
 "Parameters\n"
 "----------\n"
 "Nothing\n"
@@ -557,8 +558,26 @@ ModInt_init(ModIntObject *self, PyObject *args, PyObject *kwargs)
         }
     } else if (ModInt_Check(o)) {
         v = (long)ModInt_AsUnsignedInt(o);
+    } else if (PyUnicode_Check(o)) {
+        PyObject *u = PyLong_FromUnicodeObject(o, 10);
+        if (!u) return -1;
+        if (Py_ABS(Py_SIZE(u)) > 1 || Py_SIZE(u) < 0) {
+            PyObject *py_mod = PyLong_FromUnsignedLong((unsigned long)self->mod);
+            if (!py_mod) return -1;
+            u = PyNumber_Remainder(u, py_mod);
+            Py_DECREF(py_mod);
+            if (!u) return -1;
+        } else {
+            Py_INCREF(u);
+        }
+        v = PyLong_AsLong(u);
+        Py_DECREF(u);
+        if (v < 0) {
+            if (PyErr_Occurred()) return -1;
+            v += self->mod;
+        }
     } else {
-        PyErr_SetString(PyExc_TypeError, "required: 'int' or 'ModInt'");
+        PyErr_SetString(PyExc_TypeError, "required: 'int' or 'ModInt' or 'str'");
         return -1;
     }
     if (v >= self->mod) v %= (long)self->mod;

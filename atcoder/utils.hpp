@@ -24,40 +24,35 @@ namespace atcoder_python {
         return PyErr_Format(PyExc_TypeError , msg, name, n);   \
     } while (0)
 
+#define CHECK_INDEX_RANGE(i, n)                            \
+    do {                                                  \
+        if (i < 0 || i >= (n)) {                          \
+            const char *msg = "index %d is out of range"; \
+            return PyErr_Format(PyExc_IndexError, msg, i);\
+        }                                                 \
+    } while (0)
+
+#define CHECK_CONVERT(x) if ((x) == -1 && PyErr_Occurred()) return NULL;
+
 
 static int
 _PyObject_AsPositiveInt(PyObject *o) {
     PyLongObject *pa;
     pa = (PyLongObject *)o;
-    Py_ssize_t size_a;
     if (pa == NULL) return -1;
     Py_INCREF(pa);
-    size_a = Py_SIZE(pa);
-    if (size_a < 0 || size_a > 1) {
+    int res = (int)PyLong_AsLong((PyObject *)pa);
+    if (res == -1 && PyErr_Occurred()) {
+        PyErr_Clear();
         Py_DECREF(pa);
         return -1;
     }
-    int res = (int)PyLong_AsLong((PyObject *)pa);
     Py_DECREF(pa);
+    if (res < 0) return -1;
     return res;
 }
 
-static long long
-_PyObject_AsPositiveLongLong(PyObject *o) {
-    PyLongObject *pa;
-    pa = (PyLongObject *)o;
-    Py_ssize_t size_a;
-    if (pa == NULL) return -1LL;
-    Py_INCREF(pa);
-    size_a = Py_SIZE(pa);
-    if (size_a < 0 || size_a > 2) {
-        Py_DECREF(pa);
-        return -1LL;
-    }
-    long long res = PyLong_AsLongLong((PyObject *)pa);
-    Py_DECREF(pa);
-    return res;
-}
+
 
 
 

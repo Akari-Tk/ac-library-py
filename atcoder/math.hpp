@@ -59,7 +59,7 @@ inv_mod(PyObject *module, PyObject *const *args, Py_ssize_t nargs) {
 }
 
 PyDoc_STRVAR(inv_mod_doc,
-u8"inv_mod($module, x, m)\n"
+"inv_mod($module, x, m)\n"
 "--\n\n"
 "Returns integer y s.t. 0 <= y < m and x * y == 1 (mod m)\n\n"
 "Parameters\n"
@@ -144,7 +144,7 @@ crt(PyObject *module, PyObject *args, PyObject *kwargs) {
 }
 
 PyDoc_STRVAR(crt_doc,
-u8"crt($module, r, m)\n"
+"crt($module, r, m)\n"
 "--\n\n"
 "Given two lists r, m with length n, it solves the modular equation system:\n"
 "    x == r[i] (mod m[i]) forall i in {0, ..., n-1}\n\n"
@@ -218,7 +218,7 @@ floor_sum(PyObject *module, PyObject *const *args, Py_ssize_t nargs) {
 }
 
 PyDoc_STRVAR(floor_sum_doc,
-u8"floor_sum($module, n, m, a, b)\n"
+"floor_sum($module, n, m, a, b)\n"
 "--\n\n"
 "Calculate sum((a * i + b) // m for i in range(n))\n"
 "It returns the answer in mod 2^64, if overflowed\n\n"
@@ -266,7 +266,7 @@ is_prime(PyObject *module, PyObject *arg) {
 }
 
 PyDoc_STRVAR(is_prime_doc,
-u8"is_prime($module, n)\n"
+"is_prime($module, n)\n"
 "--\n\n"
 "Miller-Rabin primality test for integer n\n\n"
 "Parameters\n"
