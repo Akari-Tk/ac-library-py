@@ -417,7 +417,6 @@ PyTypeObject DsuType = {
     .tp_name = "atcoder.DSU",
     .tp_basicsize = sizeof(DsuObject),
     .tp_itemsize = 0,
-    // .tp_itemsize = sizeof(int),
     .tp_repr = (reprfunc)dsu_repr,
     .tp_as_sequence = &dsu_as_sequence,
     // .tp_getattro = PyObject_GenericGetAttr,
